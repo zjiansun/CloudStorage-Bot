@@ -1,81 +1,57 @@
-/**
- * @file Sample help command with slash command.
- * @author Naman Vrati & Thomas Fournier
- * @since 3.0.0
- * @version 3.3.0
- */
-
-// Deconstructed the constants we need in this file.
-
 const { EmbedBuilder, SlashCommandBuilder } = require("discord.js");
+const fs = require('fs');
+const request = require('request');
 
-/**
- * @type {import('../../../typings').SlashInteractionCommand}
- */
 module.exports = {
 	// The data needed to register slash commands to Discord.
 
 	data: new SlashCommandBuilder()
-		.setName("help")
+		.setName("upload")
 		.setDescription(
-			"List all commands of bot or info about a specific command."
+			"Upload a file to Cloud Storage"
 		)
-		.addStringOption((option) =>
-			option
-				.setName("command")
-				.setDescription("The specific command to see the info of.")
-		),
+		.addAttachmentOption((option) =>
+			option.setName("file").setDescription("The file to upload").setRequired(true)
+		)
+		.addStringOption(option =>
+			option.setName('randomize file name')
+				.setDescription('Randomize file name?')
+				.setRequired(true)
+				.addChoices(
+					{ name: 'Yes (recommended)', value: 'yes' },
+					{ name: 'No', value: 'no' },
+		)),
 
 	async execute(interaction) {
-		/**
-		 * @type {string}
-		 * @description The "command" argument
-		 */
-		let name = interaction.options.getString("command");
-
-		/**
-		 * @type {EmbedBuilder}
-		 * @description Help command's embed
-		 */
-		const helpEmbed = new EmbedBuilder().setColor("Random");
-
-		if (name) {
-			name = name.toLowerCase();
-
-			// If a single command has been asked for, send only this command's help.
-
-			helpEmbed.setTitle(`Help for \`${name}\` command`);
-
-			if (interaction.client.slashCommands.has(name)) {
-				const command = interaction.client.slashCommands.get(name);
-
-				if (command.data.description)
-					helpEmbed.setDescription(
-						command.data.description + "\n\n**Parameters:**"
-					);
+		const file = interaction.options.getAttachment("file");
+		console.log(file.contentType)
+		const options = {
+			method: 'POST',
+			formData: {
+			  url: file.url,
+			  secret: ''
+			},
+			url: 'https://0x0.st'
+		  };
+		request(options, (error, response, body) => {
+			if (error) {
+				console.error(error);
 			} else {
-				helpEmbed
-					.setDescription(`No slash command with the name \`${name}\` found.`)
-					.setColor("Red");
+				//SUCCESSIVELY UPLOADS THE FILE TO CLOUD STORAGE
+				const embed = new EmbedBuilder()
+				.setTitle("File Uploaded!")
+				.setDescription("Your attachment has been successfully uploaded to Cloud Storage!")
+				.setColor('Green')
+				.setURL(body)
+				.addFields(
+				{ name: "File", value: `[${file.name}](${body})`, inline: true },
+				{ name: "File Type", value: file.contentType, inline: true },
+				{ name: "File Size", value: ((file.size)*0.000001).toFixed(2) + "MB", inline: true },
+				)
+				.setTimestamp()
+				.setFooter({ text: "Cloud Storage" });
+				interaction.reply({ embeds: [embed] });
 			}
-		} else {
-			// Give a list of all the commands
-
-			helpEmbed
-				.setTitle("List of all my slash commands")
-				.setDescription(
-					"`" +
-						interaction.client.slashCommands
-							.map((command) => command.data.name)
-							.join("`, `") +
-						"`"
-				);
-		}
-
-		// Replies to the interaction!
-
-		await interaction.reply({
-			embeds: [helpEmbed],
 		});
 	},
 };
