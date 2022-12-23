@@ -17,77 +17,80 @@ module.exports = {
 		),
 
 	async execute(interaction) {
-		interaction.deferReply();
-		const file = interaction.options.getAttachment("file");
-		const options = {
-			method: 'POST',
-			formData: {
-			  url: file.url,
-			  secret: ''
-			},
-			url: 'https://0x0.st'
-		  };
-		request(options, (error, response, body) => {
-			if (((file.size)*0.000001).toFixed(0) > 10){
-					//CHECKS IF FILE IS TOO LARGE
-					const oversizeFile = new EmbedBuilder()
-					.setTitle("File Too Large!")
-					.setDescription("The file you are trying to upload is too large! (Max 10MB)")
-					.addFields(
-						{ name: "Limit Size", value: "8MB", inline: true },
-						{ name: "File Size", value: ((file.size)*0.000001).toFixed(0) + "MB", inline: true },
-					)
-					.setFooter({ text: "Premium feature coming soon (Limit 25MB)" })
-					.setColor('Red')
-					.setTimestamp()
-					interaction.editReply({ embeds: [oversizeFile] })
-
-				} else if(isValidURL(body) == false){
-					//CHECKS IF FILE IS NOT A VALID URL
-					const invalidFile = new EmbedBuilder()
-					.setTitle("Invalid File!")
-					.setDescription("The file you are trying to upload is not an accepted file!")
-					.setColor('Orange')
-					.addFields(
-						{ name: "File Name", value: `${file.name}`, inline: true },
-						{ name: "File Type", value: `${file.contentType}`, inline: true },
-						{ name: "Disallowed File Types", value: '```' + 'application/x-dosexec\n application/x-executable\n application/x-sharedlib\n application/x-hdf5\n application/java-archive\n application/vnd.android.package-archive' + '```'},
-					)
-					.setTimestamp()
-					interaction.editReply({ embeds: [invalidFile] })
-
-				}else{
-				writeToDB(interaction.user.id, file.name, body, ((file.size)*0.000001).toFixed(2), Date.now());
-				//SUCCESSIVELY UPLOADS THE FILE TO CLOUD STORAGE
-				getDataFromDB(interaction.user.id).then((data) => {
-					var totalFileSize = 0;
-					for (var i = 0; i < Object.keys(data).length; i++){
-						totalFileSize += parseFloat(data[Object.keys(data)[i]].fileSize);
-					}
-					
-					const successEmbed = new EmbedBuilder()
-					.setTitle("File Uploaded!")
-					.setDescription(`${interaction.user.username}, your file has been successfully uploaded to Cloud Storage!`)
-
-					.setColor('Green')
-					.addFields(
-					{ name: ":page_facing_up: File Name", value: `[${file.name}](${body})`, inline: true },
-					{ name: ":file_folder: File Type", value: file.contentType, inline: true },
-					{ name: ":file_cabinet: File Size", value: ((file.size)*0.000001).toFixed(2) + "MB", inline: true },
-					{ name: ":link: Sharing Link", value: body},
-					{ name: ":bar_chart: Total Usage", value: totalFileSize.toFixed(2) + "MB", inline: true },
-					{ name: ":receipt: Files Uploaded", value: Object.keys(data).length + " Files", inline: true},
-					)
-					.setTimestamp()
-					.setFooter({ text: "Cloud Storage" });
-					interaction.editReply({ embeds: [successEmbed] }).catch((err) => {
+			interaction.deferReply();
+			const file = interaction.options.getAttachment("file");
+			const options = {
+				method: 'POST',
+				formData: {
+				  url: file.url,
+				  secret: ''
+				},
+				url: 'https://0x0.st'
+			  };
+			request(options, (error, response, body) => {
+				if (((file.size)*0.000001).toFixed(0) > 10){
+						//CHECKS IF FILE IS TOO LARGE
+						const oversizeFile = new EmbedBuilder()
+						.setTitle("File Too Large!")
+						.setDescription("The file you are trying to upload is too large! (Max 10MB)")
+						.addFields(
+							{ name: "Limit Size", value: "8MB", inline: true },
+							{ name: "File Size", value: ((file.size)*0.000001).toFixed(0) + "MB", inline: true },
+						)
+						.setFooter({ text: "Premium feature coming soon (Limit 25MB)" })
+						.setColor('Red')
+						.setTimestamp()
+						interaction.editReply({ embeds: [oversizeFile] })
+	
+					} else if(isValidURL(body) == false){
+						//CHECKS IF FILE IS NOT A VALID URL
+						const invalidFile = new EmbedBuilder()
+						.setTitle("Invalid File!")
+						.setDescription("The file you are trying to upload is not an accepted file!")
+						.setColor('Orange')
+						.addFields(
+							{ name: "File Name", value: `${file.name}`, inline: true },
+							{ name: "File Type", value: `${file.contentType}`, inline: true },
+							{ name: "Disallowed File Types", value: '```' + 'application/x-dosexec\n application/x-executable\n application/x-sharedlib\n application/x-hdf5\n application/java-archive\n application/vnd.android.package-archive' + '```'},
+						)
+						.setTimestamp()
+						interaction.editReply({ embeds: [invalidFile] })
+	
+					}else{
+					writeToDB(interaction.user.id, file.name, body, ((file.size)*0.000001).toFixed(2), Date.now());
+					//SUCCESSIVELY UPLOADS THE FILE TO CLOUD STORAGE
+					getDataFromDB(interaction.user.id).then((data) => {
+						var totalFileSize = 0;
+						for (var i = 0; i < Object.keys(data).length; i++){
+							totalFileSize += parseFloat(data[Object.keys(data)[i]].fileSize);
+						}
+						try{
+						const successEmbed = new EmbedBuilder()
+						.setTitle("File Uploaded!")
+						.setDescription(`${interaction.user.username}, your file has been successfully uploaded to Cloud Storage!`)
+	
+						.setColor('Green')
+						.addFields(
+						{ name: ":page_facing_up: File Name", value: `[${file.name}](${body})`, inline: true },
+						{ name: ":file_folder: File Type", value: `${file.contentType}`, inline: true },
+						{ name: ":file_cabinet: File Size", value: `${((file.size)*0.000001).toFixed(2)}` + "MB", inline: true },
+						{ name: ":link: Sharing Link", value: `${body}`},
+						{ name: ":bar_chart: Total Usage", value: `${totalFileSize.toFixed(2)}` + "MB", inline: true },
+						{ name: ":receipt: Files Uploaded", value: `${Object.keys(data).length}` + " Files", inline: true},
+						)
+						.setTimestamp()
+						.setFooter({ text: "Cloud Storage" });
+						interaction.editReply({ embeds: [successEmbed] }).catch((err) => {
+							console.log(err);
+							interaction.followUp({ content: "There was an error uploading your file!" })
+						});
+					}catch(err){
 						console.log(err);
-						interaction.followUp({ content: "There was an error uploading your file!" })
-					});
-				})
-				}
-
-		});
+					}
+					})
+					}
+	
+			});
 	},
 };
 

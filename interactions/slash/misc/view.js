@@ -8,40 +8,50 @@ module.exports = {
 	// The data needed to register slash commands to Discord.
 
 	data: new SlashCommandBuilder()
-		.setName("usage")
+		.setName("view")
 		.setDescription(
-			"View your file usage"
-		),
+			"View details about a file"
+		)
+        .addStringOption(option => option.setName('code').setDescription('The code of the file you want to view').setRequired(true)),
 
 	async execute(interaction) {
 		await interaction.deferReply();
-        const data = await getDataFromDB(interaction.user.id);
-        if (data == undefined){
+        var code = interaction.options.getString('code');
+        try {
+            var data = await getDataFromDB(`${interaction.user.id}/${code}`);
+            let fileLink = data.fileLink;
+            let fileName = data.fileName;
+            let fileSize = data.fileSize;
+            //send the file details as an embed
+            const fileDetails = new EmbedBuilder()
+            .setTitle("File Details")
+            .setDescription("Here are the details of the file you requested!")
+            .setColor('Green')
+            .addFields(
+                { name: "File Name", value: `${fileName}`, inline: true },
+                { name: "File Size", value: `${fileSize}` + " MB", inline: true },
+                { name: "File Link", value: fileLink }
+            )
+            .setFooter({ text: "Use /usage to view all your files and their code!"})
+            .setTimestamp()
+            interaction.editReply({ embeds: [fileDetails] })
+
+        } catch(error) {
+            // The error will tell you where the DataPath stopped. In this case test1
+            // Since /test1/test does't exist.
             const noFiles = new EmbedBuilder()
-            .setTitle("No Files!")
-            .setDescription("You have no files uploaded!")
+            .setTitle("File does not exist!")
+            .setDescription("You have no files associated with the code you provided!")
+            .addFields(
+                { name: "Code Provided", value: '`'+code+'`' }
+            )
+            .setFooter({ text: "Use /usage to view all your files and their code!"})
             .setColor('Red')
             .setTimestamp()
             interaction.editReply({ embeds: [noFiles] })
-        }else{
-            var totalFileSize = 0;
-            let fileString = "";
-			for (var i = 0; i < Object.keys(data).length; i++){
-				totalFileSize += parseFloat(data[Object.keys(data)[i]].fileSize);
-                fileString += `\nName: ${data[Object.keys(data)[i]].fileName} | Code: ${Object.keys(data)[i]} | Size: ${data[Object.keys(data)[i]].fileSize} MB`
-			}
-            const files = new EmbedBuilder()
-            .setTitle("Storage Usage")
-            .setDescription("Here is your storage usage! No limit is being enforced at the moment, but don't abuse it!")
-            .setColor('Green')
-            .addFields(
-                { name: "Total Files", value: `${Object.keys(data).length}`, inline: true },
-                { name: "Total File Size", value: `${totalFileSize}` + " MB", inline: true },
-                { name: "Files", value: '```' + fileString + '```' }
-            )
-            .setTimestamp()
-            await interaction.editReply({ embeds: [files] })
-        }
+            console.error("FILE NOT FOUND");
+        };
+
 	},
 };
 
