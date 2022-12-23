@@ -42,7 +42,7 @@ module.exports = {
 					.setTimestamp()
 					interaction.editReply({ embeds: [oversizeFile] })
 
-				}else if(isValidURL(body) == false){
+				} else if(isValidURL(body) == false){
 					//CHECKS IF FILE IS NOT A VALID URL
 					const invalidFile = new EmbedBuilder()
 					.setTitle("Invalid File!")
